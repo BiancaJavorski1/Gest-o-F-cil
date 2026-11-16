@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>GestãoFácil MPE</title>
+  
+  <!-- Vínculo obrigatório para virar App PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f1f5f9; user-select: none; }
+    .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #ffffff; display: flex; flex-direction: column; box-shadow: 0 0 25px rgba(0,0,0,0.08); }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Banner de Instalação PWA (Aparece automaticamente no celular) -->
+  <div id="install-banner" class="hidden bg-emerald-600 text-white px-4 py-2.5 flex justify-between items-center text-xs">
+    <span><i class="fas fa-mobile-screen mr-1.5"></i> Instale o app na tela inicial</span>
+    <button id="btn-install" class="bg-white text-emerald-700 font-bold px-3 py-1 rounded-lg shadow">Instalar</button>
+  </div>
+
+  <!-- Cabeçalho + Gamificação -->
+  <header class="bg-slate-900 text-white p-5 rounded-b-3xl shadow-md">
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <span class="text-xs uppercase tracking-wider text-emerald-400 font-semibold">GestãoFácil MPE</span>
+        <h1 class="text-lg font-bold">Painel do Gestor</h1>
+      </div>
+      <div class="bg-slate-800 px-3 py-1.5 rounded-full flex items-center gap-2 border border-slate-700">
+        <i class="fas fa-fire text-amber-400"></i>
+        <span id="xp-badge" class="text-xs font-bold">Nível 1 • 0 XP</span>
+      </div>
+    </div>
+
+    <div class="bg-slate-800 p-3 rounded-xl">
+      <div class="flex justify-between text-xs text-slate-300 mb-1">
+        <span>Engajamento Operacional</span>
+        <span id="xp-text">0 / 100 XP</span>
+      </div>
+      <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+        <div id="xp-bar" class="bg-emerald-400 h-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-1.5"><i class="fas fa-award text-amber-400 mr-1"></i> Mantenha o fluxo de caixa atualizado para evoluir.</p>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="flex-1 p-4 pb-24 overflow-y-auto">
+    
+    <!-- ABA 1: FINANCEIRO -->
+    <section id="tab-financeiro">
+      <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 rounded-2xl shadow mb-4">
+        <p class="text-xs opacity-85">Saldo em Caixa (Capital de Giro)</p>
+        <h2 id="saldo-total" class="text-2xl font-extrabold mt-0.5">R$ 0,00</h2>
+        <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/20 text-xs">
+          <div>
+            <span class="opacity-80 block">Receitas</span>
+            <strong id="total-entradas" class="text-emerald-200 text-sm">R$ 0,00</strong>
+          </div>
+          <div>
+            <span class="opacity-80 block">Despesas</span>
+            <strong id="total-saidas" class="text-rose-200 text-sm">R$ 0,00</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 mb-4">
+        <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Novo Lançamento (+25 XP)</h3>
+        <div class="space-y-2">
+          <input id="fin-desc" type="text" placeholder="Descrição (ex: Venda Diária, Fornecedor)" class="w-full p-2.5 text-sm border rounded-xl bg-white focus:outline-none focus:border-emerald-500">
+          <div class="grid grid-cols-2 gap-2">
+            <input id="fin-valor" type="number" step="0.01" placeholder="Valor (R$)" class="w-full p-2.5 text-sm border rounded-xl bg-white focus:outline-none focus:border-emerald-500">
+            <select id="fin-tipo" class="w-full p-2.5 text-sm border rounded-xl bg-white focus:outline-none focus:border-emerald-500">
+              <option value="entrada">Entrada (+)</option>
+              <option value="saida">Saída (-)</option>
+            </select>
+          </div>
+          <button onclick="adicionarTransacao()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+            Salvar no Caixa
+          </button>
+        </div>
+      </div>
+
+      <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Movimentações Recentes</h3>
+      <div id="lista-transacoes" class="space-y-2"></div>
+    </section>
+
+    <!-- ABA 2: OPERACIONAL -->
+    <section id="tab-operacional" class="hidden">
+      <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 mb-4">
+        <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Cadastrar Produto / Insumo (+25 XP)</h3>
+        <div class="space-y-2">
+          <input id="est-nome" type="text" placeholder="Nome do item" class="w-full p-2.5 text-sm border rounded-xl bg-white">
+          <div class="grid grid-cols-2 gap-2">
+            <input id="est-qtd" type="number" placeholder="Quantidade" class="w-full p-2.5 text-sm border rounded-xl bg-white">
+            <button onclick="adicionarProduto()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-sm">
+              Cadastrar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Controle de Estoque</h3>
+      <div id="lista-estoque" class="space-y-2"></div>
+    </section>
+
+  </main>
+
+  <!-- Barra de Navegação Inferior -->
+  <nav class="fixed bottom-0 w-full max-w-[480px] bg-white border-t border-slate-200 grid grid-cols-2 py-2.5 text-xs font-semibold">
+    <button onclick="mudarAba('financeiro')" id="btn-fin" class="flex flex-col items-center text-emerald-600">
+      <i class="fas fa-wallet text-lg mb-1"></i>
+      Financeiro
+    </button>
+    <button onclick="mudarAba('operacional')" id="btn-ope" class="flex flex-col items-center text-slate-400">
+      <i class="fas fa-boxes-stacked text-lg mb-1"></i>
+      Operacional
+    </button>
+  </nav>
+</div>
+
+<script>
+  // Registro do Service Worker para habilitar instalação PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW erro:', err));
+    });
+  }
+
+  // Captura o evento de instalação no Android/Chrome
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('install-banner').classList.remove('hidden');
+  });
+
+  document.getElementById('btn-install').addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        document.getElementById('install-banner').classList.add('hidden');
+      }
+      deferredPrompt = null;
+    }
+  });
+
+  // Lógica do Aplicativo
+  let transacoes = JSON.parse(localStorage.getItem('mpe_transacoes')) || [
+    { id: 1, desc: 'Capital de Giro Inicial', valor: 2000.00, tipo: 'entrada' },
+    { id: 2, desc: 'Compra de Mercadorias', valor: 450.00, tipo: 'saida' }
+  ];
+  let estoque = JSON.parse(localStorage.getItem('mpe_estoque')) || [
+    { id: 1, nome: 'Produto Principal', qtd: 15 },
+    { id: 2, nome: 'Embalagem Padrão', qtd: 4 }
+  ];
+  let xp = parseInt(localStorage.getItem('mpe_xp')) || 25;
+
+  function ganharXP(pontos) {
+    xp += pontos;
+    localStorage.setItem('mpe_xp', xp);
+    atualizarGamificacao();
+  }
+
+  function atualizarGamificacao() {
+    const nivel = Math.floor(xp / 100) + 1;
+    const progresso = xp % 100;
+    document.getElementById('xp-badge').innerText = `Nível ${nivel} • ${xp} XP`;
+    document.getElementById('xp-text').innerText = `${progresso} / 100 XP`;
+    document.getElementById('xp-bar').style.width = `${progresso}%`;
+  }
+
+  function formatarMoeda(v) {
+    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function renderizarFinanceiro() {
+    const lista = document.getElementById('lista-transacoes');
+    lista.innerHTML = '';
+    let entradas = 0, saidas = 0;
+
+    transacoes.slice().reverse().forEach(t => {
+      if (t.tipo === 'entrada') entradas += t.valor;
+      else saidas += t.valor;
+
+      const cor = t.tipo === 'entrada' ? 'text-emerald-600' : 'text-rose-600';
+      const sinal = t.tipo === 'entrada' ? '+' : '-';
+      lista.innerHTML += `
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+          <div>
+            <p class="text-sm font-semibold text-slate-800">${t.desc}</p>
+            <span class="text-[11px] text-slate-400 uppercase">${t.tipo}</span>
+          </div>
+          <span class="text-sm font-bold ${cor}">${sinal} ${formatarMoeda(t.valor)}</span>
+        </div>`;
+    });
+
+    document.getElementById('saldo-total').innerText = formatarMoeda(entradas - saidas);
+    document.getElementById('total-entradas').innerText = formatarMoeda(entradas);
+    document.getElementById('total-saidas').innerText = formatarMoeda(saidas);
+    localStorage.setItem('mpe_transacoes', JSON.stringify(transacoes));
+  }
+
+  function adicionarTransacao() {
+    const desc = document.getElementById('fin-desc').value.trim();
+    const valor = parseFloat(document.getElementById('fin-valor').value);
+    const tipo = document.getElementById('fin-tipo').value;
+    if (!desc || isNaN(valor) || valor <= 0) return alert('Preencha descrição e valor válido.');
+
+    transacoes.push({ id: Date.now(), desc, valor, tipo });
+    document.getElementById('fin-desc').value = '';
+    document.getElementById('fin-valor').value = '';
+    ganharXP(25);
+    renderizarFinanceiro();
+  }
+
+  function renderizarEstoque() {
+    const lista = document.getElementById('lista-estoque');
+    lista.innerHTML = '';
+    estoque.forEach(item => {
+      const alerta = item.qtd <= 5 ? '<span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold ml-2">Repor</span>' : '';
+      lista.innerHTML += `
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+          <div>
+            <p class="text-sm font-semibold text-slate-800">${item.nome}${alerta}</p>
+            <span class="text-xs text-slate-500">Em estoque: <strong>${item.qtd} un.</strong></span>
+          </div>
+          <div class="flex gap-1.5">
+            <button onclick="alterarQtd(${item.id}, -1)" class="w-8 h-8 rounded-lg bg-slate-100 font-bold text-slate-700">-</button>
+            <button onclick="alterarQtd(${item.id}, 1)" class="w-8 h-8 rounded-lg bg-slate-900 font-bold text-white">+</button>
+          </div>
+        </div>`;
+    });
+    localStorage.setItem('mpe_estoque', JSON.stringify(estoque));
+  }
+
+  function adicionarProduto() {
+    const nome = document.getElementById('est-nome').value.trim();
+    const qtd = parseInt(document.getElementById('est-qtd').value);
+    if (!nome || isNaN(qtd) || qtd < 0) return alert('Informe o produto e a quantidade.');
+
+    estoque.push({ id: Date.now(), nome, qtd });
+    document.getElementById('est-nome').value = '';
+    document.getElementById('est-qtd').value = '';
+    ganharXP(25);
+    renderizarEstoque();
+  }
+
+  function alterarQtd(id, delta) {
+    const prod = estoque.find(p => p.id === id);
+    if (prod && prod.qtd + delta >= 0) {
+      prod.qtd += delta;
+      ganharXP(10);
+      renderizarEstoque();
+    }
+  }
+
+  function mudarAba(aba) {
+    document.getElementById('tab-financeiro').classList.toggle('hidden', aba !== 'financeiro');
+    document.getElementById('tab-operacional').classList.toggle('hidden', aba !== 'operacional');
+    document.getElementById('btn-fin').className = aba === 'financeiro' ? 'flex flex-col items-center text-emerald-600' : 'flex flex-col items-center text-slate-400';
+    document.getElementById('btn-ope').className = aba === 'operacional' ? 'flex flex-col items-center text-emerald-600' : 'flex flex-col items-center text-slate-400';
+  }
+
+  atualizarGamificacao();
+  renderizarFinanceiro();
+  renderizarEstoque();
+</script>
+</body>
+</html>
